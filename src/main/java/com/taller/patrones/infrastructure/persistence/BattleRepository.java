@@ -13,7 +13,17 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class BattleRepository {
 
-    private static final Map<String, Battle> battles = new ConcurrentHashMap<>();
+    private static final BattleRepository INSTANCE = new BattleRepository();
+
+    private final Map<String, Battle> battles = new ConcurrentHashMap<>();
+
+    private BattleRepository() {
+        // constructor privado para evitar instanciación externa
+    }
+
+    public static BattleRepository getInstance() {
+        return INSTANCE;
+    }
 
     public void save(String id, Battle battle) {
         battles.put(id, battle);

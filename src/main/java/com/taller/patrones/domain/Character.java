@@ -21,6 +21,48 @@ public class Character {
         this.speed = speed;
     }
 
+    // Builder para crear instancias de Character de forma legible y con valores por defecto
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+        private String name = "Héroe";
+        private int maxHp = 100;
+        private int attack = 10;
+        private int defense = 10;
+        private int speed = 10;
+
+        public Builder name(String name) {
+            if (name != null) this.name = name;
+            return this;
+        }
+
+        public Builder maxHp(int maxHp) {
+            this.maxHp = maxHp;
+            return this;
+        }
+
+        public Builder attack(int attack) {
+            this.attack = attack;
+            return this;
+        }
+
+        public Builder defense(int defense) {
+            this.defense = defense;
+            return this;
+        }
+
+        public Builder speed(int speed) {
+            this.speed = speed;
+            return this;
+        }
+
+        public Character build() {
+            return new Character(name, maxHp, attack, defense, speed);
+        }
+    }
+
     public String getName() { return name; }
     public int getCurrentHp() { return currentHp; }
     public int getMaxHp() { return maxHp; }
