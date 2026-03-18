@@ -1,6 +1,7 @@
 package com.taller.patrones.interfaces.rest;
 
 import com.taller.patrones.application.BattleService;
+import com.taller.patrones.application.CombatFacade;
 import com.taller.patrones.domain.Battle;
 import com.taller.patrones.domain.Character;
 import com.taller.patrones.infrastructure.adapter.ExternalBattleDto;
@@ -8,7 +9,6 @@ import com.taller.patrones.infrastructure.adapter.ExternalBattleMapper;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -17,6 +17,7 @@ import java.util.Map;
 public class BattleController {
 
     private final BattleService battleService = new BattleService();
+    private final CombatFacade combatFacade = new CombatFacade(battleService);
     private final ExternalBattleMapper externalBattleMapper = new ExternalBattleMapper();
 
     @PostMapping("/start")
@@ -84,12 +85,8 @@ public class BattleController {
 
         String attackName = body != null && body.get("attack") != null ? body.get("attack") : "TACKLE";
 
-        if (battle.isPlayerTurn()) {
-            battleService.executePlayerAttack(battleId, attackName);
-        } else {
-            battleService.executeEnemyAttack(battleId, attackName);
-        }
-
+        // Use facade to simplify API for clients
+        combatFacade.performAttack(battleId, attackName);
         return ResponseEntity.ok(toBattleDto(battleService.getBattle(battleId)));
     }
 
@@ -102,6 +99,13 @@ public class BattleController {
         }
         String attack = BattleService.ENEMY_ATTACKS.get((int) (Math.random() * BattleService.ENEMY_ATTACKS.size()));
         battleService.executeEnemyAttack(battleId, attack);
+        return ResponseEntity.ok(toBattleDto(battleService.getBattle(battleId)));
+    }
+
+    @PostMapping("/{battleId}/undo")
+    public ResponseEntity<Map<String, Object>> undo(@PathVariable String battleId) {
+        boolean ok = combatFacade.undoLastAttack(battleId);
+        if (!ok) return ResponseEntity.badRequest().build();
         return ResponseEntity.ok(toBattleDto(battleService.getBattle(battleId)));
     }
 

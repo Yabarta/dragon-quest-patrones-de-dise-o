@@ -21,7 +21,6 @@ public class Character {
         this.speed = speed;
     }
 
-    // Builder para crear instancias de Character de forma legible y con valores por defecto
     public static Builder builder() {
         return new Builder();
     }
@@ -81,4 +80,18 @@ public class Character {
     public double getHpPercentage() {
         return maxHp > 0 ? (double) currentHp / maxHp * 100 : 0;
     }
+
+    public void restoreHp(int hp) {
+        if (hp < 0) hp = 0;
+        if (hp > maxHp) hp = maxHp;
+        this.currentHp = hp;
+    }
+
+    public void setCurrentHp(int hp) {
+        this.currentHp = Math.max(0, Math.min(hp, maxHp));
+    }
 }
+    
+
+
+

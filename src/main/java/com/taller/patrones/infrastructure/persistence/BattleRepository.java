@@ -18,7 +18,6 @@ public class BattleRepository {
     private final Map<String, Battle> battles = new ConcurrentHashMap<>();
 
     private BattleRepository() {
-        // constructor privado para evitar instanciación externa
     }
 
     public static BattleRepository getInstance() {

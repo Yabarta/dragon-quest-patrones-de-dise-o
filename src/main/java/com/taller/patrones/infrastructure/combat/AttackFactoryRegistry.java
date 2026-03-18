@@ -22,9 +22,16 @@ public class AttackFactoryRegistry {
         register("ICE_BEAM", () -> new Attack("Ice Beam", 70, Attack.AttackType.SPECIAL));
         register("POISON_STING", () -> new Attack("Poison Sting", 20, Attack.AttackType.STATUS));
         register("THUNDER", () -> new Attack("Thunder", 90, Attack.AttackType.SPECIAL));
-
-        // Meteoro: nuevo ataque registrado aquí (ejemplo)
         register("METEOR", () -> new Attack("Meteoro", 120, Attack.AttackType.SPECIAL));
+        // Composite (combo) attacks
+        register("COMBO_TRIPLE", () -> new com.taller.patrones.domain.CompositeAttack(
+            "Combo Triple",
+            java.util.List.of(
+                create("TACKLE"),
+                create("SLASH"),
+                create("FIREBALL")
+            )
+        ));
     }
 
     public static void register(String name, AttackFactory factory) {

@@ -10,13 +10,7 @@ import com.taller.patrones.domain.Character;
  */
 public class CombatEngine {
 
-    /**
-     * Crea un ataque a partir de su nombre.
-     * Cada ataque nuevo requiere modificar este método.
-     */
     public Attack createAttack(String name) {
-        // Delegate creation to the AttackFactoryRegistry so adding new attacks
-        // doesn't require modifying this class.
         return AttackFactoryRegistry.create(name);
     }
 

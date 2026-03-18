@@ -34,8 +34,17 @@ public class Battle {
     public String getLastDamageTarget() { return lastDamageTarget; }
 
     public void log(String message) { battleLog.add(message); }
+    public void removeLastLogEntry() { if (!battleLog.isEmpty()) battleLog.remove(battleLog.size()-1); }
     public void switchTurn() { currentTurn = "player".equals(currentTurn) ? "enemy" : "player"; }
     public void finish(String winner) { finished = true; log("¡" + winner + " gana la batalla!"); }
     public boolean isPlayerTurn() { return "player".equals(currentTurn); }
     public void setLastDamage(int damage, String target) { this.lastDamage = damage; this.lastDamageTarget = target; }
+
+    public void setCurrentTurn(String turn) { this.currentTurn = turn; }
+    public void setFinished(boolean finished) { this.finished = finished; }
+    public void trimBattleLogToSize(int size) {
+        while (battleLog.size() > size) {
+            battleLog.remove(battleLog.size() - 1);
+        }
+    }
 }

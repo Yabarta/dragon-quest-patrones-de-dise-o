@@ -5,9 +5,16 @@ import com.taller.patrones.domain.Battle;
 import com.taller.patrones.domain.Character;
 import com.taller.patrones.infrastructure.combat.CombatEngine;
 import com.taller.patrones.infrastructure.persistence.BattleRepository;
+import com.taller.patrones.infrastructure.notification.AnalyticsDamageListener;
+import com.taller.patrones.infrastructure.notification.AuditDamageListener;
+import com.taller.patrones.infrastructure.notification.RealtimeStatsDamageListener;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Caso de uso: gestionar batallas.
@@ -19,6 +26,14 @@ public class BattleService {
 
     private final CombatEngine combatEngine = new CombatEngine();
     private final BattleRepository battleRepository = BattleRepository.getInstance();
+    private final java.util.List<DamageListener> damageListeners = new java.util.ArrayList<>();
+    private final Map<String, Deque<AttackCommand>> commandHistory = new HashMap<>();
+
+    public BattleService() {
+        this.addDamageListener(new AnalyticsDamageListener());
+        this.addDamageListener(new AuditDamageListener());
+        this.addDamageListener(new RealtimeStatsDamageListener());
+    }
 
     public static final List<String> PLAYER_ATTACKS = List.of("TACKLE", "SLASH", "FIREBALL", "ICE_BEAM", "POISON_STING", "THUNDER");
     public static final List<String> ENEMY_ATTACKS = List.of("TACKLE", "SLASH", "FIREBALL");
@@ -57,7 +72,11 @@ public class BattleService {
 
         Attack attack = combatEngine.createAttack(attackName);
         int damage = combatEngine.calculateDamage(battle.getPlayer(), battle.getEnemy(), attack);
-        applyDamage(battle, battle.getPlayer(), battle.getEnemy(), damage, attack);
+
+        ExecuteAttackCommand cmd = new ExecuteAttackCommand(battleId, battle, battle.getPlayer(), battle.getEnemy(), damage, attack);
+        java.util.List<DamageEvent> events = cmd.execute();
+        for (DamageEvent e : events) notifyDamageListeners(e);
+        commandHistory.computeIfAbsent(battleId, k -> new ArrayDeque<>()).push(cmd);
     }
 
     public void executeEnemyAttack(String battleId, String attackName) {
@@ -66,17 +85,39 @@ public class BattleService {
 
         Attack attack = combatEngine.createAttack(attackName != null ? attackName : "TACKLE");
         int damage = combatEngine.calculateDamage(battle.getEnemy(), battle.getPlayer(), attack);
-        applyDamage(battle, battle.getEnemy(), battle.getPlayer(), damage, attack);
+
+        ExecuteAttackCommand cmd = new ExecuteAttackCommand(battleId, battle, battle.getEnemy(), battle.getPlayer(), damage, attack);
+        java.util.List<DamageEvent> events = cmd.execute();
+        for (DamageEvent e : events) notifyDamageListeners(e);
+        commandHistory.computeIfAbsent(battleId, k -> new ArrayDeque<>()).push(cmd);
     }
 
-    private void applyDamage(Battle battle, Character attacker, Character defender, int damage, Attack attack) {
-        defender.takeDamage(damage);
-        String target = defender == battle.getPlayer() ? "player" : "enemy";
-        battle.setLastDamage(damage, target);
-        battle.log(attacker.getName() + " usa " + attack.getName() + " y hace " + damage + " de daño a " + defender.getName());
-        battle.switchTurn();
-        if (!defender.isAlive()) {
-            battle.finish(attacker.getName());
+    public boolean undoLastAttack(String battleId) {
+        Deque<AttackCommand> history = commandHistory.get(battleId);
+        if (history == null || history.isEmpty()) return false;
+        AttackCommand cmd = history.pop();
+        try {
+            cmd.undo();
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public void addDamageListener(DamageListener listener) {
+        if (listener != null) this.damageListeners.add(listener);
+    }
+
+    public void removeDamageListener(DamageListener listener) {
+        this.damageListeners.remove(listener);
+    }
+
+    private void notifyDamageListeners(DamageEvent event) {
+        for (DamageListener l : new java.util.ArrayList<>(damageListeners)) {
+            try {
+                l.onDamage(event);
+            } catch (Exception ignored) {
+            }
         }
     }
 
